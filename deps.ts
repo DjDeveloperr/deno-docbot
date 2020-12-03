@@ -1,1 +1,1 @@
-export * from "https://deno.land/x/harmony@v0.9.0/mod.ts";
+export * from 'https://raw.githubusercontent.com/harmony-org/harmony/main/mod.ts'
