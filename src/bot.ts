@@ -1,4 +1,4 @@
-import { config } from '../config-example.ts'
+import { config } from '../config.ts'
 import { CommandClient } from '../deps.ts'
 import { commands } from './commands/mod.ts'
 import { startFetch } from './util/docs.ts'

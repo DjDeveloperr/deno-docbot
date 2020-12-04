@@ -1,6 +1,6 @@
 import { Command, CommandContext, Embed } from '../../deps.ts'
 import { getNode, NodeEmoji, NodeEmojiURL } from '../util/docs.ts'
-import { config } from '../../config-example.ts'
+import { config } from '../../config.ts'
 
 export default class GetDocCommand extends Command {
   name = 'Get'

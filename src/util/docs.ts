@@ -1,4 +1,4 @@
-import { config } from '../../config-example.ts'
+import { config } from '../../config.ts'
 import { log } from './log.ts'
 
 export type NodeType =
