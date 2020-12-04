@@ -69,6 +69,8 @@ export interface NodeParam {
   name: string
   optional: boolean
   tsType: TsType
+  left?: NodeParam
+  right?: string
 }
 
 export interface NodeClassConstructorDef {
@@ -95,7 +97,8 @@ export interface NodeClassDef {
   isAbstract: boolean
   constructors: NodeClassConstructorDef[]
   properties: NodeProperty[]
-  extends: TsType | null
+  //extends: TsType | null
+  extends: string | null
   indexSignatures: any[]
   implements: string[]
   typeParams: NodeParam[]
