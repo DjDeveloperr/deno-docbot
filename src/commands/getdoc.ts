@@ -16,7 +16,7 @@ export default class GetDocCommand extends Command {
 
     const embed = new Embed()
       .setTitle(`${node.name} (${node.kind})`)
-      .setURL(node.location.filename)
+      .setURL(`https://doc.deno.land/${node.location.filename}`)
       .setColor(0x0dbc6a)
 
     if (node.jsDoc != null) embed.setDescription(node.jsDoc)
@@ -67,13 +67,13 @@ export default class GetDocCommand extends Command {
           .map((prop) =>
             prop.left
               ? `• **${prop.left.name}:** ${
-                  `[${prop.left.tsType?.repr}](${config.module}#${prop.left.tsType?.repr})` ||
+                  `[${prop.left.tsType?.repr}](https;//doc.deno.land/${config.module}#${prop.left.tsType?.repr})` ||
                   `[${prop.left.tsType?.keyword}](https://doc.deno.land/${config.module}#${prop.left.tsType?.keyword})` ||
                   prop.left.tsType?.union
                     ?.map(
                       (t) =>
-                        `[${t.repr}](${config.module}#${t.repr})` ||
-                        `[${t.keyword}](${config.module}#${t.keyword})`
+                        `[${t.repr}](https://doc.deno.land/${config.module}#${t.repr})` ||
+                        `[${t.keyword}](https://doc.deno.land/${config.module}#${t.keyword})`
                     )
                     .join(' | ') ||
                   `[${prop.left.tsType?.typeRef?.typeName}](https://doc.deno.land/${config.module}#${prop.left.tsType?.typeRef?.typeName})` ||
@@ -84,13 +84,13 @@ export default class GetDocCommand extends Command {
                     : ''
                 }`
               : `• **${prop.name}:** ${
-                  `[${prop.tsType?.repr}](${config.module}#${prop.tsType?.repr})` ||
+                  `[${prop.tsType?.repr}](https://doc.deno.land/${config.module}#${prop.tsType?.repr})` ||
                   `[${prop.tsType?.keyword}](https://doc.deno.land/${config.module}#${prop.tsType?.keyword})` ||
                   prop.tsType?.union
                     ?.map(
                       (t) =>
-                        `[${t.repr}](${config.module}#${t.repr})` ||
-                        `[${t.keyword}](${config.module}#${t.keyword})`
+                        `[${t.repr}](https://doc.deno.land/${config.module}#${t.repr})` ||
+                        `[${t.keyword}](https://doc.deno.land/${config.module}#${t.keyword})`
                     )
                     .join(' | ') ||
                   `[${prop.tsType?.typeRef?.typeName}](https://doc.deno.land/${config.module}#${prop.tsType?.typeRef?.typeName})` ||
