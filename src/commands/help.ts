@@ -8,7 +8,7 @@ export default class PingCommand extends Command {
   description = 'Get list of commands or info of one.'
 
   execute(ctx: CommandContext) {
-    if (ctx.args.length === 0) {
+    if ((ctx.args ?? []).length === 0) {
       const embed = new Embed()
         .setTitle('Help - Commands')
         .setColor(0x0dbc6a)
@@ -26,7 +26,7 @@ export default class PingCommand extends Command {
 
       ctx.channel.send(embed)
     } else {
-      let cmd = ctx.client.commands.fetch(ctx.argString)
+      const cmd = ctx.client.commands.find(ctx.argString)
       if (cmd === undefined)
         return ctx.message.reply(
           `Command could not be found. Try \`${ctx.prefix} help\` for more a list.`

@@ -1,1 +1,1 @@
-export * from 'https://raw.githubusercontent.com/harmony-org/harmony/main/mod.ts'
+export * from 'https://raw.githubusercontent.com/harmonyland/harmony/main/mod.ts'

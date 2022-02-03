@@ -1,4 +1,4 @@
-import { config } from './config-example.ts'
+import { config } from './config.ts'
 import { client } from './src/bot.ts'
 import { GatewayIntents } from './deps.ts'
 

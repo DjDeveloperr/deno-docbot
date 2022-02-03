@@ -6,6 +6,6 @@ export default class PingCommand extends Command {
   description = "Check bot's WS Ping."
 
   execute(ctx: CommandContext) {
-    ctx.message.reply(`Pong! WS Ping: ${ctx.client.ping}ms`)
+    ctx.message.reply(`Pong! WS Ping: ${ctx.client.gateway.ping}ms`)
   }
 }
