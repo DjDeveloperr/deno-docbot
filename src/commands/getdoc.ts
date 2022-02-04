@@ -93,15 +93,13 @@ export default class GetDocCommand extends Command {
         def.params.length === 0 ? "Empty" : paramsTxt,
       );
 
-      const returnsText = getLink(
-        def.returnType.repr ||
-          def.returnType.keyword ||
-          def.returnType.union
-            ?.map((type) => type.repr || type.keyword)
-            .join(" | ") ||
-          def.returnType.typeRef?.typeName ||
-          "unknown",
-      );
+      const returnsText = def.returnType.repr ||
+        def.returnType.keyword ||
+        def.returnType.union
+          ?.map((type) => type.repr || type.keyword)
+          .join(" | ") ||
+        def.returnType.typeRef?.typeName ||
+        "unknown";
 
       embed.addField("Returns", returnsText);
       embed.addField("Async?", def.isAsync ? "True" : "False");
@@ -111,15 +109,13 @@ export default class GetDocCommand extends Command {
     if (node.typeAliasDef) {
       const def = node.typeAliasDef;
 
-      const typeTxt = getLink(
-        def.tsType.repr ||
-          def.tsType.keyword ||
-          def.tsType.union
-            ?.map((type) => type.repr || type.keyword)
-            .join(" | ") ||
-          def.tsType.typeRef?.typeName ||
-          "unknown",
-      );
+      const typeTxt = def.tsType.repr ||
+        def.tsType.keyword ||
+        def.tsType.union
+          ?.map((type) => type.repr || type.keyword)
+          .join(" | ") ||
+        def.tsType.typeRef?.typeName ||
+        "unknown";
 
       embed.addField("TypeAlias for", typeTxt);
     }
@@ -127,7 +123,7 @@ export default class GetDocCommand extends Command {
     if (node.enumDef) {
       const def = node.enumDef;
 
-      const membersTxt = def.members.join(", ");
+      const membersTxt = def.members.map((elt) => elt.name).join(", ");
 
       embed.addField(
         "Members",
