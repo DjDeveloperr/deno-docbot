@@ -75,7 +75,7 @@ export interface NodeParam {
 }
 
 export interface NodeClassConstructorDef {
-  jsDoc: string | null
+  jsDoc: {doc: string} | null
   accessibility: any
   name: string
   params: NodeParam[]
