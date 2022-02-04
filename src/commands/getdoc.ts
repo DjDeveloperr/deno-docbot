@@ -1,5 +1,5 @@
 import { Command, CommandContext, Embed } from "../../deps.ts";
-import { getNode } from "../util/docs.ts";
+import { getNode, NodeParam, NodeProperty } from "../util/docs.ts";
 import { config } from "../../config.ts";
 
 export default class GetDocCommand extends Command {
@@ -34,21 +34,7 @@ export default class GetDocCommand extends Command {
       }
 
       if (def.properties.length) {
-        const proptxt = def.properties.map(
-          (prop) => {
-            const propertyName = `**${prop.name}${prop.optional ? "?" : ""}**`;
-
-            const propertyType = prop.tsType?.repr ||
-              prop.tsType?.keyword ||
-              prop.tsType?.union?.map((t) => t.repr || t.keyword).join(" | ") ||
-              prop.tsType?.typeRef?.typeName ||
-              "unknown";
-
-            const jsDocs = prop.jsDoc ? "- " + prop.jsDoc.doc : "";
-
-            return `• ${propertyName} ${propertyType} ${jsDocs}`;
-          },
-        ).join("\n");
+        const proptxt = def.properties.map(getPropertyTxt).join("\n");
 
         embed = foldEmbed(embed, "Properties", proptxt);
       }
@@ -63,13 +49,8 @@ export default class GetDocCommand extends Command {
         const proptxt = def.constructors[0].params.map((prop) => {
           if (prop.left) {
             const propertyName = "**" + prop.left.name + ":**";
-            const propertyType = getLink(prop.left.tsType?.repr) ||
-              getLink(prop.left.tsType?.keyword ?? "") ||
-              prop.left.tsType?.union?.map(
-                (t) => getLink(t.repr) || getLink(t.keyword ?? ""),
-              ).join(" | ") ||
-              getLink(prop.left.tsType?.typeRef?.typeName ?? "") ||
-              "unknown";
+
+            const propertyType = getLink(getType(prop.left));
 
             const jsDoc = def.constructors[0].jsDoc != null
               ? " -" + def.constructors[0].jsDoc.doc
@@ -79,13 +60,7 @@ export default class GetDocCommand extends Command {
           } else {
             const propertyName = "**" + prop.name + ":**";
 
-            const propertyType = getLink(prop.tsType?.repr) ||
-              getLink(prop.tsType?.keyword ?? "") ||
-              prop.tsType?.union?.map(
-                (t) => getLink(t.repr) || getLink(t.keyword ?? ""),
-              ).join(" | ") ||
-              getLink(prop.tsType?.typeRef?.typeName ?? "") ||
-              "unknown";
+            const propertyType = getLink(getType(prop));
 
             const jsDoc = def.constructors[0].jsDoc != null
               ? " -" + def.constructors[0].jsDoc.doc
@@ -102,27 +77,62 @@ export default class GetDocCommand extends Command {
         );
       }
       if (def.properties.length) {
-        const proptxt = def.properties.map(
-          (prop) => {
-            const propertyName = `**${prop.name}${prop.optional ? "?" : ""}:**`;
-
-            const propertyType = prop.tsType?.repr ||
-              prop.tsType?.keyword ||
-              prop.tsType?.union
-                ?.map((t) => t.repr || t.keyword)
-                .join(" | ") ||
-              prop.tsType?.typeRef?.typeName ||
-              "unknown";
-
-              const jsDoc = prop.jsDoc != null ? ` - ${prop.jsDoc.doc}` : ""
-
-            return `• ${propertyName} ${propertyType} ${jsDoc}`;
-          },
-        )
-          .join("\n");
-
+        const proptxt = def.properties.map(getPropertyTxt).join("\n");
         embed = foldEmbed(embed, "Properties", proptxt);
       }
+    }
+
+    if (node.functionDef) {
+      const def = node.functionDef;
+
+      const paramsTxt = def.params.map(getPropertyTxt).join("\n");
+
+      embed = foldEmbed(
+        embed,
+        "Parameters",
+        def.params.length === 0 ? "Empty" : paramsTxt,
+      );
+
+      const returnsText = getLink(
+        def.returnType.repr ||
+          def.returnType.keyword ||
+          def.returnType.union
+            ?.map((type) => type.repr || type.keyword)
+            .join(" | ") ||
+          def.returnType.typeRef?.typeName ||
+          "unknown",
+      );
+
+      embed.addField("Returns", returnsText);
+      embed.addField("Async?", def.isAsync ? "True" : "False");
+      embed.addField("Generator?", def.isGenerator ? "True" : "False");
+    }
+
+    if (node.typeAliasDef) {
+      const def = node.typeAliasDef;
+
+      const typeTxt = getLink(
+        def.tsType.repr ||
+          def.tsType.keyword ||
+          def.tsType.union
+            ?.map((type) => type.repr || type.keyword)
+            .join(" | ") ||
+          def.tsType.typeRef?.typeName ||
+          "unknown",
+      );
+
+      embed.addField("TypeAlias for", typeTxt);
+    }
+
+    if (node.enumDef) {
+      const def = node.enumDef;
+
+      const membersTxt = def.members.join(", ");
+
+      embed.addField(
+        "Members",
+        def.members.length === 0 ? "Empty" : membersTxt,
+      );
     }
 
     ctx.channel.send(embed);
@@ -142,4 +152,25 @@ function foldEmbed(embed: Embed, fieldName: string, content: string): Embed {
 
 function getLink(name: string): string {
   return `[${name}](https://doc.deno.land/${config.module}#${name})`;
+}
+
+function getType(node: NodeProperty | NodeProperty | NodeParam): string {
+  return node.tsType?.repr ||
+    node.tsType?.keyword ||
+    node.tsType?.union
+      ?.map((type) => type.repr || type.keyword)
+      .join(" | ") ||
+    node.tsType?.typeRef?.typeName ||
+    "unknown";
+}
+
+function getPropertyTxt(node: NodeProperty | NodeProperty | NodeParam): string {
+  const propertyName = `**${node.name}${node.optional ? "?" : ""}:**`;
+
+  const propertyType = getType(node);
+
+  return `• ${propertyName} ${propertyType} ${
+    // deno-lint-ignore no-explicit-any
+    (node as any).jsDoc != null ? ` - ${(node as any).jsDoc.doc}` : ""
+  }`;
 }

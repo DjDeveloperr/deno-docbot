@@ -151,6 +151,7 @@ export interface DocNode {
   functionDef?: NodeFunctionDef
   typeAliasDef?: NodeTypeAliasDef
   importDef?: NodeImportDef
+  enumDef?: NodeEnumDef
 }
 
 export const read = (): DocNode[] => {
