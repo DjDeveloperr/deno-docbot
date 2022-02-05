@@ -1,1 +1,1 @@
-export * from 'https://raw.githubusercontent.com/harmonyland/harmony/main/mod.ts'
+export * from 'https://code.harmony.rocks/v2.5.1'
