@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import { config } from '../../config.ts'
 import { log } from './log.ts'
 
@@ -74,7 +75,7 @@ export interface NodeParam {
 }
 
 export interface NodeClassConstructorDef {
-  jsDoc: string | null
+  jsDoc: {doc: string} | null
   accessibility: any
   name: string
   params: NodeParam[]
@@ -82,7 +83,7 @@ export interface NodeClassConstructorDef {
 }
 
 export interface NodeProperty {
-  jsDoc: string | null
+  jsDoc: {doc: string} | null
   tsType?: TsType
   readonly: boolean
   accessibility: string | null
@@ -143,20 +144,21 @@ export interface NodeInterfaceDef {
 export interface DocNode {
   kind: NodeType
   name: string
-  jsDoc: string | null
+  jsDoc: {doc: string} | null
   location: NodeLocation
   classDef?: NodeClassDef
   interfaceDef?: NodeInterfaceDef
   functionDef?: NodeFunctionDef
   typeAliasDef?: NodeTypeAliasDef
   importDef?: NodeImportDef
+  enumDef?: NodeEnumDef
 }
 
 export const read = (): DocNode[] => {
   try {
-    const text = Deno.readTextFileSync('./doc.json')
-    return JSON.parse(text).nodes.filter((e: any) => e.kind !== 'import')
-  } catch (e) {
+    const text = Deno.readTextFileSync(Deno.cwd() + '/doc.json')
+    return JSON.parse(text).filter((e: any) => e.kind !== 'import')
+  } catch (_e) {
     return []
   }
 }
@@ -175,22 +177,19 @@ export const search = (name: string) => {
 
 export const fetchDoc = async () => {
   const res = await fetch(
-    'https://doc.deno.land/api/docs?entrypoint=' +
-      config.module +
-      '&force_reload=true'
+    'https://docpi.deno.dev/?entrypoint=' + config.module
   ).then((res) => res.json())
 
-  await Deno.writeTextFile('./doc.json', JSON.stringify(res))
+  await Deno.writeTextFile(Deno.cwd() + '/doc.json', JSON.stringify(res))
   log('Docs', `Fetched docs`)
   return res
 }
 
-export const startFetch = async () => {
-  // await fetchDoc()
-
+export const startFetch = () => {
   return setInterval(async () => {
     try {
-      fetchDoc()
-    } catch (e) {}
+      await fetchDoc()
+    // deno-lint-ignore no-empty
+    } catch (_e) {}
   }, 1000 * 60 * 30)
 }
