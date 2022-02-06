@@ -12,40 +12,6 @@ export type NodeType =
   | "function"
   | "identifier";
 
-export const NodeEmoji: {
-  [name: string]: string;
-} = {
-  class: "🇨",
-  interface: "🇮",
-  typeAlias: "🇹",
-  import: "🇮",
-  enum: "🇪",
-  method: "🇲",
-  function: "🇫",
-  identifier: "🇽",
-};
-
-export const NodeEmojiURL: {
-  [name: string]: string;
-} = {
-  class:
-    "https://canary.discord.com/assets/3e0ee2fd29177284491b8fb543bb4bdb.svg",
-  interface:
-    "https://canary.discord.com/assets/4606ee2759d6aae4410c034fb94a8395.svg",
-  typeAlias:
-    "https://canary.discord.com/assets/6c0a0b4df6f599f65e40ad372047d782.svg",
-  import:
-    "https://canary.discord.com/assets/4606ee2759d6aae4410c034fb94a8395.svg",
-  enum:
-    "https://canary.discord.com/assets/0df8cc6898cdb812709a4672f137b62d.svg",
-  method:
-    "https://canary.discord.com/assets/3ae4af803746f6882a684a5a48dc29ff.svg",
-  function:
-    "https://canary.discord.com/assets/197cdfb70e6835c81cbb1af86ab7e01e.svg",
-  identifier:
-    "https://canary.discord.com/assets/1c196447e01b16cdb2d0eeea39c3c145.svg",
-};
-
 export interface NodeLocation {
   line: number;
   col: number;

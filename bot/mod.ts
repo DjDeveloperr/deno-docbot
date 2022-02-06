@@ -14,10 +14,10 @@ import {
   EXPANDED_NAMES,
   getNode,
   NodeClassDef,
-  NodeEmoji,
   NodeMethodDef,
   NodeProperty,
   searchNodes,
+  startFetch,
   toStringRepr,
 } from "../util/docs.ts";
 import { log } from "../util/log.ts";
@@ -33,6 +33,8 @@ export class DocBot extends Client {
   @event()
   async ready() {
     log("Bot", "Connected!");
+
+    startFetch()
 
     const existingCommands = await this.interactions.commands.all();
 
@@ -56,28 +58,6 @@ export class DocBot extends Client {
         ],
       );
     }
-  }
-
-  @slash()
-  search(d: ApplicationCommandInteraction) {
-    const query = d.option<string>("query").replaceAll(" ", "");
-    const results = searchNodes(query);
-    if (!results.length) {
-      return d.respond(this.queryNotFound);
-    }
-
-    const responseText = results.map((e) =>
-      `• ${NodeEmoji[e.kind]} **${e.name}** (${e.kind})`
-    ).join("\n");
-
-    d.respond({
-      embeds: [
-        new Embed()
-          .setTitle("Search Results")
-          .setColor("#758ADC")
-          .setDescription(responseText),
-      ],
-    });
   }
 
   @autocomplete("doc", "name")
