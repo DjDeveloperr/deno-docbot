@@ -1,5 +1,7 @@
 import {
   ApplicationCommandInteraction,
+  autocomplete,
+  AutocompleteInteraction,
   Client,
   Embed,
   event,
@@ -34,21 +36,9 @@ export class DocBot extends Client {
 
     const existingCommands = await this.interactions.commands.all();
 
-    if (existingCommands.size !== 2) {
+    if (existingCommands.size !== 1) {
       await this.interactions.commands.bulkEdit(
         [
-          {
-            name: "search",
-            description: "Search for something in Docs.",
-            options: [
-              {
-                name: "query",
-                description: "Query to search with.",
-                type: Type.STRING,
-                required: true,
-              },
-            ],
-          },
           {
             name: "doc",
             description:
@@ -59,6 +49,7 @@ export class DocBot extends Client {
                 description: "Name to see documentation of.",
                 type: Type.STRING,
                 required: true,
+                autocomplete: true,
               },
             ],
           },
@@ -87,6 +78,18 @@ export class DocBot extends Client {
           .setDescription(responseText),
       ],
     });
+  }
+
+  @autocomplete("doc", "name")
+  name(d: AutocompleteInteraction) {
+    const results = searchNodes(d.focusedOption.value);
+
+    return d.autocomplete(
+      results.map((row) => ({
+        name: `${row.name} (${row.kind})`,
+        value: row.name,
+      })),
+    );
   }
 
   @slash()
