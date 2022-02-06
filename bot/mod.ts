@@ -1,8 +1,8 @@
 import {
+  ApplicationCommandInteraction,
   Client,
   Embed,
   event,
-  Interaction,
   InteractionResponseType as RT,
   slash,
   SlashCommandOptionType as Type,
@@ -11,16 +11,16 @@ import { config } from "../config.ts";
 import {
   EXPANDED_NAMES,
   getNode,
+  NodeClassDef,
   NodeEmoji,
   NodeMethodDef,
   NodeProperty,
   searchNodes,
   toStringRepr,
 } from "../util/docs.ts";
+import { log } from "../util/log.ts";
 
 export class DocBot extends Client {
-  sync = Deno.args.includes("sync");
-
   constructor() {
     super({
       token: config.token,
@@ -30,9 +30,11 @@ export class DocBot extends Client {
 
   @event()
   async ready() {
-    console.log(`Connected!`);
-    // await this.interactions.commands.bulkEdit([]);
-    if (this.sync) {
+    log("Bot", "Connected!");
+
+    const existingCommands = await this.interactions.commands.all();
+
+    if (existingCommands.size !== 2) {
       await this.interactions.commands.bulkEdit(
         [
           {
@@ -66,34 +68,29 @@ export class DocBot extends Client {
   }
 
   @slash()
-  search(d: Interaction) {
-    if (!d.isApplicationCommand()) return;
+  search(d: ApplicationCommandInteraction) {
     const query = d.option<string>("query").replaceAll(" ", "");
     const results = searchNodes(query);
     if (!results.length) {
-      return d.respond({
-        ephemeral: true,
-        content: "Could not find anything matching query.",
-      });
+      return d.respond(this.queryNotFound);
     }
+
+    const responseText = results.map((e) =>
+      `• ${NodeEmoji[e.kind]} **${e.name}** (${e.kind})`
+    ).join("\n");
 
     d.respond({
       embeds: [
         new Embed()
           .setTitle("Search Results")
           .setColor("#758ADC")
-          .setDescription(
-            results
-              .map((e) => `• ${NodeEmoji[e.kind]} **${e.name}** (${e.kind})`)
-              .join("\n"),
-          ),
+          .setDescription(responseText),
       ],
     });
   }
 
   @slash()
-  doc(d: Interaction) {
-    if (!d.isApplicationCommand()) return;
+  doc(d: ApplicationCommandInteraction) {
     let name = d.option<string>("name").replaceAll(" ", "");
     if (name.includes("#") && name.split("#")[1].length > 0) {
       const splitedName = name.split("#");
@@ -103,85 +100,70 @@ export class DocBot extends Client {
           e.name.toLowerCase() == name.toLowerCase() &&
           e.prop.toLowerCase() == splitedName[1]?.toLowerCase(),
       );
-      if (!node) {
-        return d.respond({
-          ephemeral: true,
-          content: "Could not find documentation for given name.",
-          type: RT.CHANNEL_MESSAGE_WITH_SOURCE,
-        });
-      }
+
+      if (!node) return d.respond(this.docNotFound);
 
       const embed = new Embed()
         .setColor("#758ADC")
         .setTitle(
           `Docs - ${node.n} (${node.isProperty ? "property" : "method"})`,
         );
-      const dnode = getNode(node.name)!;
+
+      const mainNode = getNode(node.name)!;
+
+      const mainNodeDef = mainNode.kind == "class"
+        ? mainNode.classDef!
+        : mainNode.interfaceDef!;
+
       const props = node.isProperty
-        ? (dnode.kind == "class" ? dnode.classDef! : dnode.interfaceDef!)
-          .properties.filter((e) => e.name == node.prop)
-        : (dnode.kind == "class" ? dnode.classDef! : dnode.interfaceDef!)
-          .methods
-          .filter((e) => e.name == node.prop);
+        ? mainNodeDef.properties.filter((e) => e.name == node.prop)
+        : mainNodeDef.methods.filter((e) => e.name == node.prop);
 
-      if (!props || !props.length) {
-        return d.respond({
-          ephemeral: true,
-          content: "Could not find documentation for given name.",
-          type: RT.CHANNEL_MESSAGE_WITH_SOURCE,
-        });
-      }
+      if (!props || !props.length) return d.respond(this.docNotFound);
 
-      const len = props.length;
       props.forEach((prop: NodeMethodDef | NodeProperty, i: number) => {
-        if (prop && prop.jsDoc?.doc) {
-          embed.setDescription(prop.jsDoc.doc);
-        }
+        if (prop && prop.jsDoc?.doc) embed.setDescription(prop.jsDoc.doc);
 
         if (node.isProperty) {
           embed.addField(
             "Type",
             "`" + toStringRepr((prop as NodeProperty).tsType!) + "`",
           );
+
           embed.addField(
             "Readonly",
-            (prop as NodeProperty).readonly ? "Yes" : "No",
+            boolToString((prop as NodeProperty).readonly),
             true,
           );
-          embed.addField(
-            "Optional",
-            (prop as NodeProperty).optional ? "Yes" : "No",
-            true,
-          );
-          embed.addField(
-            "Static",
-            (prop as NodeProperty).isStatic ? "Yes" : "No",
-            true,
-          );
+
+          embed.addField("Optional", boolToString(prop.optional), true);
+          embed.addField("Static", boolToString(prop.isStatic), true);
         } else {
           const def = (prop as NodeMethodDef).functionDef;
-          const etx = len > 1 ? ` #${i + 1}` : "";
+          const etx = props.length > 1 ? ` #${i + 1}` : "";
           if (def.params.length) {
-            embed.addField(
-              "Parameters" + etx,
-              def.params
-                .map(
-                  (e) =>
-                    `• \`${e.name}:${e.optional ? "?" : ""} ${
-                      toStringRepr(e.tsType)
-                    }\``,
-                )
-                .join("\n"),
-            );
+            const paramsText = def.params.map((e) => {
+              return `• \`${e.name}:${e.optional ? "?" : ""} ${
+                toStringRepr(e.tsType)
+              }\``;
+            }).join("\n");
+            embed.addField("Parameters" + etx, paramsText);
           } else embed.addField("Parameters" + etx, "None");
+
           embed.addField(
             "Returns" + etx,
             "`" + toStringRepr(def.returnType) + "`",
             true,
           );
-          if (def.isAsync) embed.addField("Async" + etx, "Yes", true);
-          if (def.isGenerator) embed.addField("Generator" + etx, "Yes", true);
-          if (prop.isStatic) embed.addField("Static" + etx, "Yes", true);
+
+          embed.addField(
+            "Generator" + etx,
+            boolToString(def.isGenerator),
+            true,
+          );
+
+          embed.addField("Async" + etx, boolToString(def.isAsync), true);
+          embed.addField("Static" + etx, boolToString(prop.isStatic), true);
         }
       });
 
@@ -191,11 +173,7 @@ export class DocBot extends Client {
     } else {
       const node = getNode(name);
       if (!node) {
-        return d.respond({
-          ephemeral: true,
-          content: "Could not find documentation for given name.",
-          type: RT.CHANNEL_MESSAGE_WITH_SOURCE,
-        });
+        return d.respond(this.docNotFound);
       }
       const embed = new Embed()
         .setColor("#758ADC")
@@ -210,13 +188,14 @@ export class DocBot extends Client {
             "Extends",
             typeof def.extends === "string"
               ? def.extends
-              : def.extends.join(", "),
+              : def.extends.map(toStringRepr).join(", "),
           );
         }
-        // deno-lint-ignore no-explicit-any
-        if ((def as any).implements?.length) {
-          // deno-lint-ignore no-explicit-any
-          embed.addField("Implements", (def as any).implements.join(", "));
+
+        const implementsDef = (def as NodeClassDef).implements;
+
+        if (implementsDef.length) {
+          embed.addField("Implements", implementsDef.join(", "));
         }
         if (def.properties?.length) {
           embed.addField(
@@ -290,4 +269,23 @@ export class DocBot extends Client {
       });
     }
   }
+
+  get queryNotFound() {
+    return {
+      ephemeral: true,
+      content: "Could not find anything matching query.",
+    };
+  }
+
+  get docNotFound() {
+    return {
+      ephemeral: true,
+      content: "Could not find documentation for given name.",
+      type: RT.CHANNEL_MESSAGE_WITH_SOURCE,
+    };
+  }
+}
+
+function boolToString(val: boolean): string {
+  return val ? "Yes" : "No";
 }
